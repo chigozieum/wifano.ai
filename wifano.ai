@@ -81,6 +81,96 @@ For a production deployment of Wifano.ai, you'll need:
 - **Network**: 100Gbps interconnect (Infiniband or equivalent)
 - **Persistent Storage**: 20TB+ distributed storage system (Ceph recommended)
 
+Check if your system meets the above spec 
+
+#!/bin/bash
+
+echo "Checking cluster requirements..."
+
+# Check number of nodes
+node_count=$(wc -l < /etc/hosts)
+if [[ $node_count -lt 5 ]]; then
+    echo "❌ Minimum 5 nodes required, found $node_count"
+else
+    echo "✅ Node count meets requirement"
+fi
+
+# Check GPU nodes
+gpu_nodes=$(lspci | grep -i nvidia | wc -l)
+if [[ $gpu_nodes -lt 2 ]]; then
+    echo "❌ At least 2 nodes should have NVIDIA A100 GPUs"
+else
+    echo "✅ GPU nodes meet requirement"
+fi
+
+# Check CPU cores
+cpu_cores=$(grep -c ^processor /proc/cpuinfo)
+if [[ $cpu_cores -lt 32 ]]; then
+    echo "❌ Minimum 32 cores required, found $cpu_cores"
+else
+    echo "✅ CPU cores meet requirement"
+fi
+
+# Check memory
+ram=$(free -g | awk '/^Mem:/{print $2}')
+if [[ $ram -lt 256 ]]; then
+    echo "❌ Minimum 256GB RAM required, found ${ram}GB"
+else
+    echo "✅ RAM meets requirement"
+fi
+
+# Check storage
+storage=$(df -h / | awk 'NR==2 {print $2}')
+if [[ ${storage%T} -lt 2 ]]; then
+    echo "❌ Minimum 2TB NVMe storage required, found ${storage}"
+else
+    echo "✅ Storage meets requirement"
+fi
+
+# Check network speed
+network_speed=$(ethtool eth0 | grep "Speed" | awk '{print $2}')
+if [[ $network_speed != "100Gbps" ]]; then
+    echo "❌ Network speed should be 100Gbps, found $network_speed"
+else
+    echo "✅ Network speed meets requirement"
+fi
+
+# Check Ceph storage
+if ceph -s &> /dev/null; then
+    echo "✅ Ceph storage system detected"
+else
+    echo "❌ Ceph storage system not detected"
+fi
+
+echo "Validation complete!"
+
+
+or 
+
+
+# Check number of nodes
+wc -l < /etc/hosts
+
+# Check GPU nodes with NVIDIA A100
+lspci | grep -i nvidia
+
+# Check CPU cores (32+ required)
+grep -c ^processor /proc/cpuinfo
+
+# Check memory (RAM per node)
+free -g | awk '/^Mem:/{print $2}'
+
+# Check NVMe storage per node
+df -h / | awk 'NR==2 {print $2}'
+
+# Check network speed (100Gbps required)
+ethtool eth0 | grep "Speed"
+
+# Check persistent storage system (Ceph recommended)
+ceph -s
+
+
+
 
 ### Software Prerequisites
 
